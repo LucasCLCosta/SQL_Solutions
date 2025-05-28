@@ -1,0 +1,26 @@
+3°QUESTION: Flags per Video
+For each video, find how many unique users flagged it. A unique user can be identified using the combination of their first name and last name.
+Do not consider rows in which there is no flag ID.
+Table: user_flags
+flag_id: text
+user_firstname: text
+user_lastname: text
+video_id: text
+
+Solution:
+WITH
+selecao as (
+    SELECT 
+        video_id
+        ,concat(user_firstname, user_lastname) as unique_user
+        ,flag_id
+    FROM user_flags
+    WHERE flag_id IS NOT NULL
+    GROUP BY video_id, unique_user,3
+--select * from user_flags;
+) 
+SELECT
+    video_id
+    ,count(distinct unique_user) as num_unique_users
+FROM selecao
+GROUP BY video_id
