@@ -1,0 +1,36 @@
+
+1°QUESTION: Share of Active Users
+Calculate the percentage of users who are both from the US and have an 'open' status, as indicated in the fb_active_users table.
+Table: fb_active_users
+Preview
+
+country:
+text
+name:
+text
+status:
+text
+user_id:
+bigint
+
+#Solution: 
+--select *from fb_active_users
+
+WITH
+segmentando as (
+    SELECT 
+        count(DISTINCT user_id) as us_open_users
+    FROM fb_active_users
+    WHERE country = 'USA' AND status = 'open'
+),
+total as (
+    SELECT 
+        count(DISTINCT user_id) as total_users
+    FROM fb_active_users
+)
+
+SELECT 
+    (CAST(s.us_open_users AS FLOAT)/CAST(t.total_users AS FLOAT))*100 as percentage
+FROM segmentando s, total t
+
+    
