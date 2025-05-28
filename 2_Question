@@ -1,1 +1,69 @@
-Most Popular Client For Calls
+2° QUESTION: Most Popular Client For Calls
+Select the most popular client_id based on the number of users who individually have at least 50% of their events from the following list:
+'video call received', 'video call sent', 'voice call received', 'voice call sent'.
+Table: fact_events
+
+client_id: text
+customer_id: text
+event_id: bigint
+event_type: text
+id: bigint
+time_id: date
+user_id: text
+
+--select distinct event_type from fact_events
+WITH occurrence as (
+    SELECT 
+        id
+        ,time_id
+        ,user_id
+        ,customer_id
+        ,client_id
+        ,event_type
+        ,CASE WHEN event_type IN ('video call sent','voice call received','voice call sent','video call received') THEN 1
+        ELSE 0 END
+        AS event_f_list_count
+        ,event_id
+    FROM fact_events
+)
+, user_event_occurence as (
+    SELECT
+        user_id
+        ,client_id
+        ,event_type
+        ,event_f_list_count
+        ,sum(event_f_list_count) OVER( partition by user_id) as total_event_list_count
+        ,ROW_NUMBER() OVER(PARTITION BY user_id) as rn
+    FROM occurrence
+    GROUP BY 1,2,3,4
+    ORDER BY 1
+)
+, max_events_p_user as (
+    SELECT 
+        user_id
+        ,max(u.rn) as max_rn
+    FROM user_event_occurence u
+    GROUP BY user_id
+)
+, percentage_event_list as (
+    SELECT 
+        u.user_id
+        ,u.client_id
+        ,u.total_event_list_count
+        ,m.max_rn
+        ,CAST(total_event_list_count as DECIMAL)/CAST(max_rn as DECIMAL) as percentage_event_on_list
+    FROM max_events_p_user m 
+    JOIN user_event_occurence u 
+        ON u.user_id = m.user_id
+)
+, filtering as (
+    SELECT distinct *
+    FROM percentage_event_list 
+    WHERE percentage_event_on_list >= 0.5
+)
+SELECT 
+    client_id
+FROM filtering 
+GROUP BY 1
+ORDER BY 1 DESC
+    
